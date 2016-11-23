@@ -1,0 +1,40 @@
+class nginx{
+    include nginx::install, nginx::config, nginx::service, nginx::resource
+}
+
+class nginx::install{
+    package { 'nginx':
+        ensure => present
+    }
+}
+
+class nginx::config{
+    file { "/etc/nginx/sites-enabled/":
+        recurse => true,
+        purge => true,
+    }    
+}
+nginx::resource::vhost{'www.nwea_quiz_for_sai.com':
+  listen_port => 8888,
+  proxy       => 'http://localhost:5601',
+}
+
+class nginx::service{
+    service { 'nginx':
+        ensure => running,
+    }
+}
+
+Class["nginx::install"] -> Class["nginx::config"] -> Class["nginx::service"]
+
+define nginx::site( $source ){
+    file { "/etc/nginx/sites-enabled/$name":
+        ensure => present,
+        source => $source,
+        owner => root,
+        group => root,
+        mode => 0644,
+        require => Class['nginx'],
+        notify => Class['nginx::service'],
+    }
+}
